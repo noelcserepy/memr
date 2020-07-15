@@ -34,16 +34,21 @@ async def test(ctx, arg):
 @client.command()
 async def meme(ctx, arg):
     vc = await connect_vc(ctx.message.author.voice.channel)
-    connected = False
 
-    if vc.is_connected():
-        connected = True
-        vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'))
+    if not vc.is_playing():
+        vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'), after=afterHandler)
     else:
-        connected = False
-        vc = connect_vc(ctx.message.author.voice.channel)
-        vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'))
+        addToQueue(arg)
         
+
+def afterHandler(error):
+    if error:
+        print(error)
+    print("Handling after playback")
+
+def addToQueue(arg):
+    print(f"\"{arg}\" added to queue.")        
+
 
 async def connect_vc(channel): 
     # Connects to Voice Client if not already connected and returns it.
