@@ -2,6 +2,7 @@ import discord
 import os
 import re
 import youtube_dl
+import ffmpeg 
 from discord.ext import commands
 
 
@@ -25,46 +26,49 @@ async def leave(ctx):
     await ctx.voice_client.disconnect()
 
 
-
 @client.command()
 async def test(ctx, arg):
     await ctx.send(arg)
 
 
-# @client.event
-# async def on_message(message):
-#     if message.author == client.user:
-#         return
+@client.command()
+async def meme(ctx, arg):
+    vc = await connect_vc(ctx.message.author.voice.channel)
+    connected = False
 
+    if vc.is_connected():
+        connected = True
+        vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'))
+    else:
+        connected = False
+        vc = connect_vc(ctx.message.author.voice.channel)
+        vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'))
+        
 
-#     if message.content.startswith("!meme "):
-#         print(message.content)
-#         memeReq = re.search(r"\!meme (.+)", message.content).group(1)
-#         await message.channel.send(memeReq)
+async def connect_vc(channel): 
+    # Connects to Voice Client if not already connected and returns it.
+    vc_list = client.voice_clients
+    
+    try:
+        if not vc_list:
+            vc = await channel.connect(timeout=30.0, reconnect=True)
+            if vc.is_connected():
+                print(f"Successfully connected to Voice Client {vc}")
+        else:
+            vc = vc_list[0]
+            if vc.is_connected():
+                print(f"Already connected to Voice Client {vc}")
+        return vc
 
+    except:
+        print("Could not connect or find Voice Client. Try again.")
 
-#     if message.content.startswith("$hello"):
-#         await message.channel.send("hello!")
+    
 
-#     if message.content == "who":
-#         sender = message.author
-#         senderVoiceChannel = sender.voice.channel
-#         currentVoiceClient = await senderVoiceChannel.connect(timeout=60.0, reconnect=True)
-
-#         currentAudioSource = discord.AudioSource.read("audiofiles/pusstime.ogg")
-#         currentVoiceClient.play(currentAudioSource)
-
-
-
+    # dl_list = [arg]
+    # ytAudio = youtube_dl.YoutubeDL().download(dl_list)
+    # audioSource = discord.FFmpegAudio(ytAudio)
+    # authorVoiceClient.play(audioSource)
 
 
 client.run(token)
-
-
-# def custom_probe(source, executable):
-#     # some analysis code here
-
-#     return codec, bitrate
-
-# source = await discord.FFmpegOpusAudio.from_probe("song.webm", method=custom_probe)
-# voice_client.play(source)
