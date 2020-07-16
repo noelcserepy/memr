@@ -1,8 +1,7 @@
 import discord
 import os
-import re
-import youtube_dl
 import ffmpeg 
+from pytube import YouTube
 from discord.ext import commands
 
 
@@ -34,6 +33,14 @@ async def test(ctx, arg):
 @client.command()
 async def meme(ctx, arg):
     vc = await connect_vc(ctx.message.author.voice.channel)
+
+    
+    
+    stream = ffmpeg.input("pipe:")
+    stream = ffmpeg.output(stream, "output.ogg")
+    ffmpeg.run(stream, capture_stdout=True)
+
+    
 
     if not vc.is_playing():
         vc.play(discord.FFmpegPCMAudio('audiofiles/pusstime.ogg'), after=afterHandler)
@@ -70,10 +77,14 @@ async def connect_vc(channel):
 
     
 
-    # dl_list = [arg]
-    # ytAudio = youtube_dl.YoutubeDL().download(dl_list)
-    # audioSource = discord.FFmpegAudio(ytAudio)
-    # authorVoiceClient.play(audioSource)
+    
 
+
+out, _ = (ffmpeg
+    .input(in_filename, **input_kwargs)
+    .output('-', format='s16le', acodec='pcm_s16le', ac=1, ar='16k')
+    .overwrite_output()
+    .run(capture_stdout=True)
+)
 
 client.run(token)
