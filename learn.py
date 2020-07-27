@@ -1,5 +1,6 @@
 import discord
 import os
+import re
 from pytube import YouTube
 import ffmpeg 
 import time
@@ -8,53 +9,64 @@ from discord.ext import commands
 from tinydb import TinyDB, Query
 
 
-def ytff(memeName, url, s=0, d=10):
-    # Check valid argument entry
-    if not memeName.isalnum():
-        print("memeName not alphanumeric")
-        return
+
+def convertTime(a):
+    if not re.match(r"^[0-9:.]+$", a):
+        return "invalid timecode"
+        
+    b = a.split(":")
     
-    if s < 0 or d < 0:
-        print("Start and Duration not positive")
-        return
-
-    # Creating DB and checking if memeName already exists
-    db = TinyDB("db.json")
-    Meme = Query()
-    a = db.search(Meme.name == memeName)
-    if a:
-        print("memeName already exists")
-        return
-
-    # Create filename with unique ID
-    memeID = uuid.uuid1().hex
-    fileName = memeID + " - " + memeName
-
-    # If memeName is new and arguments are valid, the audio is downloaded, trimmed and saved. 
-    # memeName and filename are stored in DB.
-    yt = YouTube(url)
-    saved = yt.streams.get_audio_only().download(output_path="audiofiles/", filename=fileName)
+    if len(b) == 1:
+        return a
     
-    while not saved:
-        time.sleep(1)
+    if len(b) == 2:
+        if "." in b[0]:
+            return "No decimals in the minutes pls"
 
-    print("Audio downloaded")
+        if int(b[0]) >= 60:
+            return "Can't have more than 60 minutes in an hour, dummy."
 
-    stream = ffmpeg.input(f"audiofiles/{fileName}.mp4")
-    stream = stream.audio.filter("atrim", start=s, duration=d)
-    stream = ffmpeg.output(stream, f"audiofiles/{fileName}.ogg")
-    ffmpeg.run(stream)
-    print("Audio trimmed and converted")
+        if float(b[1]) >= 60:
+            return "Can't have more than 60 seconds in a minute, dummy."
 
-    db.insert({"name": memeName, "path": f"audiofiles/{fileName}.ogg"})
-    print("Meme added to DB")
+        mins = int(b[0]) * 60
+        secs = float(b[1]) 
+        return mins + secs
     
+    if len(b) == 3:
+        if "." in b[0]:
+            return "No decimals in the hours pls"
+        
+        if int(b[0]) > 5:
+            return "That's a really long video. I am not bothering to download that."
 
-# ytff("oke", "https://www.youtube.com/watch?v=BW1aX0IbZOE", s=5.5)
+        if "." in b[1]:
+            return "No decimals in the minutes pls"
 
+        if int(b[1]) >= 60:
+            return "Can't have more than 60 minutes in an hour, dummy."
 
-db = TinyDB("db.json")
-Meme = Query()
-a = db.search(Meme.name == "oke")
-path = a[0]["path"]
-print(path)
+        if float(b[2]) >= 60:
+            return "Can't have more than 60 seconds in a minute, dummy."
+
+        hrs = int(b[0]) * 60 * 60
+        mins = int(b[1]) * 60
+        secs = float(b[2])
+        return hrs + mins + secs
+
+#print(convertTime("1:2:20.2"))
+
+# from datetime import datetime
+# import time
+# s = "09:51:43.22"
+# s = "16/09/1990 " + s 
+# d = datetime.strptime(s, "%d/%m/%Y  %H:%M:%S.%f")
+# secs = time.mktime(d.timetuple())
+# print(secs)
+
+l = [12345]
+
+if (1 or -1) == -1:
+    print("yee")
+else: 
+    print("Nope")
