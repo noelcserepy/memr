@@ -2,36 +2,42 @@
 Memr is a Discord bot that allows members of a Discord server to save short audio clips from YouTube as memes and recall them with a command. 
 
 
+
 ## Installation
 This bot is still in development. If you are interested, send me a PM on GitHub and I will let you know when Memr is ready to be tested.
+
 
 
 ## How does it work?
 After the bot is added to your Discord channel, the bot's database is a blank slate. This means that there are no memes saved yet. 
 
+
 ### Adding memes
 You can add memes to the database by typing the command "$addmeme" in the discord chat, followed by the name of your meme, the youtube link and the start and end timestamps.
 
 Example: 
-'<$addmeme rickroll https://www.youtube.com/watch?v=dQw4w9WgXcQ 0:42.5 0:51>'
+`$addmeme rickroll https://www.youtube.com/watch?v=dQw4w9WgXcQ 0:42.5 0:51`
 
 A meme can be a maximum of 10 seconds long. 
+
 
 ### Playing memes
 To play the meme just use the command "$meme" followed by the name of the meme you would like to recall. 
 
 Example:
-'<$meme rickroll>'
+`$meme rickroll`
 
 The Memr bot will then enter the voice channel you are currently in and play the audio clip. 
 
+
 ### Other commands
 
-'<$remove memeName>' - Will remove a meme from the database. 
+`$remove memeName` - Will remove a meme from the database. 
 
-'<$join>' - Will make Memr join your current voice channel.
+`$join` - Will make Memr join your current voice channel.
 
-'<$leave>' - Will make Memr leave your current voice channel. 
+`$leave` - Will make Memr leave your current voice channel. 
+
 
 
 ## Why I built this bot
