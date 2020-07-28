@@ -1,1 +1,5 @@
 /audiofiles/*
+/db.json
+/queue.json
+/learn.py
+/memes.txt
