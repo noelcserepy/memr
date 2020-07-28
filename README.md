@@ -1,8 +1,4 @@
-# Memr
-Discord bot for playing back audio memes on command.
-
-
-## What is Memr?
+# What is Memr?
 Memr is a Discord bot that allows members of a Discord server to save short audio clips from YouTube as memes and recall them with a command. 
 
 
