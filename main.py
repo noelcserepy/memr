@@ -37,25 +37,25 @@ async def test(ctx, arg):
 
 
 @client.command()
-async def addmeme(ctx, memeName, url, s, e):
+async def addmeme(ctx, memeName, url, start, end):
     # Check valid argument entry
     if not memeName.isalnum():
         await ctx.send("memeName not alphanumeric")
         return
     
-    if not s or not e:
+    if not start or not end:
         await ctx.send("Please enter start and end timestamps.")
 
 
     # Convert timestamps to seconds
     try:
-        s = convertTime(s)
-        e = convertTime(e)
+        start = convertTime(start)
+        end = convertTime(end)
 
-        if (type(s) is str) or (type(e) is str):
-            print(s)
-            print(e)
-            await ctx.send("Conversion went wrong:" + s + e)
+        if (type(start) is str) or (type(end) is str):
+            print(start)
+            print(end)
+            await ctx.send("Conversion went wrong:" + start + end)
             return
             
     except:
@@ -66,8 +66,8 @@ async def addmeme(ctx, memeName, url, s, e):
     # Creating DB and checking if memeName already exists
     db = TinyDB("db.json")
     Meme = Query()
-    a = db.search(Meme.name == memeName)
-    if a:
+    memeDocList = db.search(Meme.name == memeName)
+    if memeDocList:
         await ctx.send("memeName already exists")
         return
 
@@ -86,7 +86,7 @@ async def addmeme(ctx, memeName, url, s, e):
     print("Audio downloaded")
 
     stream = ffmpeg.input(f"audiofiles/{fileName}.mp4")
-    stream = stream.audio.filter("atrim", start=s, end=e)
+    stream = stream.audio.filter("atrim", start=start, end=end)
     stream = ffmpeg.output(stream, f"audiofiles/{fileName}.ogg")
     ffmpeg.run(stream)
     print("Audio trimmed and converted")
@@ -109,14 +109,14 @@ async def meme(ctx, memeName):
     # Searching if meme already exists
     db = TinyDB("db.json")
     Meme = Query()
-    a = db.search(Meme.name == memeName)
+    memeDocList = db.search(Meme.name == memeName)
 
-    if not a:
+    if not memeDocList:
         await ctx.send("Meme not in DB. Use '$list' command for all memes or '$addmeme' to register a new meme.")
         return
 
     # If meme exists, connect to server
-    path = a[0]["path"]
+    path = memeDocList[0]["path"]
     try:
         vc = await connect_vc(ctx.message.author.voice.channel)
     except:
@@ -140,7 +140,7 @@ async def meme(ctx, memeName):
             qname = doc["name"]
             qpath = doc["path"]
             docID = doc.doc_id
-            
+
             qdb.remove(doc_ids=[docID])
 
             vc.play(discord.FFmpegPCMAudio(qpath), after=afterHandler)
@@ -157,12 +157,12 @@ async def meme(ctx, memeName):
 async def remove(ctx, memeName):
     db = TinyDB("db.json")
     Meme = Query()
-    a = db.search(Meme.name == memeName)
-    if not a:
+    memeDocList = db.search(Meme.name == memeName)
+    if not memeDocList:
         await ctx.send("Meme not in DB")
         return
     
-    memePath = a[0]["path"]
+    memePath = memeDocList[0]["path"]
     if os.path.exists(memePath):
         os.remove(memePath)
         print(f"Removed audio file for \"{memeName}\".")
