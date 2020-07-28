@@ -123,10 +123,34 @@ async def meme(ctx, memeName):
         print("Could not connect or find Voice Client. Try again.")
         pass
 
+    # Function for handling errors and queueing next clip
+    def afterHandler(error):
+        if error:
+            print(error)
+            ctx.send("An error has ocurred: ", error)
+            pass
+
+        qdb = TinyDB("queue.json")
+        
+        if not qdb.all():
+            print("Done with queue.")
+        else:
+            doc = qdb.all()[0]
+
+            qname = doc["name"]
+            qpath = doc["path"]
+            docID = doc.doc_id
+            
+            qdb.remove(doc_ids=[docID])
+
+            vc.play(discord.FFmpegPCMAudio(qpath), after=afterHandler)
+
+            
+
     if not vc.is_playing():
         vc.play(discord.FFmpegPCMAudio(path), after=afterHandler)
     else:
-        addToQueue(memeName)
+        addToQueue(memeName, path)
 
 
 @client.command()
@@ -195,33 +219,11 @@ def convertTime(a):
         return hrs + mins + secs
 
 
-def afterHandler(error):
-    if error:
-        print(error)
 
-    # qdb = TinyDB("queue.json")
-    
-    # if not qdb.all():
-    #     print("Done with queue.")
-
-    # if queue:
-    
-    print("Handling after playback")
-
-
-queue = []
-
-def addToQueue(memeName):
-    # qdb = TinyDB("queue.json")
-    # Queue = Query()
-    # a = qdb.search(Queue.name == "memeQueue")
-
-    # if not a:
-    #     qdb.insert({"name": "memeQueue", "memeQ": [memeName]})
-    
-    queue.prepend(memeName)
-
-    print(f"\"{memeName}\" added to queue in position {len(queue)}")        
+def addToQueue(memeName, path):
+    qdb = TinyDB("queue.json")
+    qdb.insert({"name": memeName, "path": path})
+    print(f"\"{memeName}\" added to queue")        
 
 
 async def connect_vc(channel): 
