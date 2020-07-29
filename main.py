@@ -55,8 +55,10 @@ async def addmeme(ctx, memeName, url, start, end):
         if (type(start) is str) or (type(end) is str):
             print(start)
             print(end)
-            await ctx.send("Conversion went wrong:" + start + end)
+            await ctx.send("Timecode conversion went wrong")
             return
+        if start > end:
+            await ctx.send("End timestamp needs to be after starting timestamp. Try again.")
             
     except:
         print("Conversion went wrong")
@@ -179,7 +181,7 @@ def convertTime(a):
     b = a.split(":")
     
     if len(b) == 1:
-        return a
+        return float(a)
     
     if len(b) == 2:
         if "." in b[0]:
