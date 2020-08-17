@@ -49,7 +49,7 @@ async def test(ctx, arg):
 # Bot returns a list of all added memes
 @client.command()
 async def allmemes(ctx):
-    collection = db[str(ctx.guild)]
+    collection = db[str(ctx.guild.id)]
 
     if collection.count_documents({}) < 1:
         await ctx.send("You have not yet added any memes. You can add memes by using the $addmeme command")
@@ -95,7 +95,7 @@ async def addmeme(ctx, memeName, url, start, end):
         return
 
     # Creating DB and checking if memeName already exists
-    collection = db[str(ctx.guild)]
+    collection = db[str(ctx.guild.id)]
     if collection.find_one({"name": memeName}):
         await ctx.send("Meme name already exists. Try again.")
         return
@@ -141,7 +141,7 @@ async def addmeme(ctx, memeName, url, start, end):
 @client.command()
 async def meme(ctx, memeName):
     # Searching if meme exists
-    collection = db[str(ctx.guild)]
+    collection = db[str(ctx.guild.id)]
     docToPlay = collection.find_one({"name": memeName})
     if not docToPlay:
         await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes or \"$addmeme\" to register a new meme.")
@@ -190,19 +190,21 @@ async def meme(ctx, memeName):
 # Removes meme audio file and DB entry
 @client.command()
 async def remove(ctx, memeName):
-    db = TinyDB("db.json")
-    Meme = Query()
-    memeDocList = db.search(Meme.name == memeName)
-    if not memeDocList:
-        await ctx.send("Meme not in DB")
+    collection = db[str(ctx.guild.id)]
+    docToRemove = collection.find_one({"name": memeName})
+
+    if not docToRemove:
+        await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes.")
         return
     
-    memePath = memeDocList[0]["path"]
+    memePath = docToRemove.get("path")
+
     if os.path.exists(memePath):
         os.remove(memePath)
         print(f"Removed audio file for \"{memeName}\".")
 
-    db.remove(Meme.name == memeName)
+    docToRemove_id = docToRemove.get("_id")
+    collection.delete_one({"_id": docToRemove_id})
     
     await ctx.send(f"Removed \"{memeName}\" from DB.")
 
