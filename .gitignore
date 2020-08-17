@@ -1,5 +1,12 @@
 /audiofiles/*
-/db.json
 /queue.json
+<<<<<<< Updated upstream
 /learn.py
 /memes.txt
+=======
+/memes.txt
+/Dockerfile
+/todo
+/.env
+/playground.py
+>>>>>>> Stashed changes
