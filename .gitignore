@@ -1,5 +1,4 @@
 /audiofiles/*
 /queue.json
-/Dockerfile
 /.env
 /playground.py

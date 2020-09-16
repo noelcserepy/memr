@@ -14,7 +14,7 @@ from pymongo import MongoClient
 
 # Establishing a connection to the DB
 mongoToken = os.getenv("MONGO_TOKEN")
-cluster = MongoClient(mongoToken)
+cluster = MongoClient(mongoToken, 3000)
 db = cluster["Memr"]
 
 # Establishing a connection to the Discord API
@@ -171,7 +171,6 @@ async def meme(ctx, memeName):
         else:
             doc = qdb.all()[0]
 
-            qname = doc["name"]
             qpath = doc["path"]
             docID = doc.doc_id
 
