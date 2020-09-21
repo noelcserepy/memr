@@ -2,3 +2,4 @@
 /queue.json
 /.env
 /playground.py
+/Dockerfile
