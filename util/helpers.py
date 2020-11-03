@@ -1,4 +1,6 @@
 import re
+from collections import deque
+from errors import errors
 
 def convert_timecode_to_seconds(user_time):
     """ Converts user timecode format to seconds. """
@@ -13,7 +15,7 @@ def convert_timecode_to_seconds(user_time):
     }
 
     if not re.match(r"^[0-9:.]+$", user_time):
-        return replies.get("0")
+        errors.TimecodeError(replies.get("0"))
         
     temp_time = user_time.split(":")
     
@@ -22,13 +24,14 @@ def convert_timecode_to_seconds(user_time):
     
     if len(temp_time) == 2:
         if "." in temp_time[0]:
-            return replies.get("1")
+            raise errors.TimecodeError(replies.get("1"))
+                
 
         if int(temp_time[0]) >= 60:
-            return replies.get("2")
+            raise errors.TimecodeError(replies.get("2"))
 
         if float(temp_time[1]) >= 60:
-            return replies.get("3")
+            raise errors.TimecodeError(replies.get("3"))
 
         mins = int(temp_time[0]) * 60
         secs = float(temp_time[1]) 
@@ -36,19 +39,19 @@ def convert_timecode_to_seconds(user_time):
     
     if len(temp_time) == 3:
         if "." in temp_time[0]:
-            return replies.get("4")
+            raise errors.TimecodeError(replies.get("4"))
         
         if int(temp_time[0]) > 5:
-            return replies.get("5")
+            raise errors.TimecodeError(replies.get("5"))
 
         if "." in temp_time[1]:
-            return replies.get("1")
+            raise errors.TimecodeError(replies.get("1"))
 
         if int(temp_time[1]) >= 60:
-            return replies.get("2")
+            raise errors.TimecodeError(replies.get("2"))
 
         if float(temp_time[2]) >= 60:
-            return replies.get("3")
+            raise errors.TimecodeError(replies.get("3"))
             
 
         hrs = int(temp_time[0]) * 60 * 60
@@ -59,23 +62,65 @@ def convert_timecode_to_seconds(user_time):
 
 def check_valid_timecode(memeName, start, end):
     if not memeName.isalnum():
-        return "memeName needs to be alphanumeric"
+        raise errors.TimecodeError("Meme name needs to be alphanumeric")
 
     if not start or not end:
-        return "Please enter start and end timestamps."
+        raise errors.TimecodeError("No start and end timestamps.")
 
-    try:
-        start = convert_timecode_to_seconds(start)
-        end = convert_timecode_to_seconds(end)
+    start = convert_timecode_to_seconds(start)
+    end = convert_timecode_to_seconds(end)
 
-        if type(start) is str:
-             return start
-        
-        if type(end) is str:
-            return end
+    if start > end:
+        raise errors.TimecodeError("End timestamp needs to be after starting timestamp. Try again.")
 
-        if start > end:
-            return "End timestamp needs to be after starting timestamp. Try again."
+    return (start, end)
             
-    except:
-        return "Invalid timestamps. Try again"
+    
+
+
+class MemeQueue:
+    """
+    Handles memes to be played next.
+    """
+    def __init__(self, guild_id):
+        self.deck = deque([])
+        self.guild_id = ""
+
+    def addToQueue(self, fileName):
+        self.deck.append(fileName)
+
+    def nextInQueue(self):
+        nextElement = self.deck.popleft()
+        return nextElement
+
+    def clearQueue(self):
+        self.deck = deque([])
+
+
+queues = {}
+def queue_get_next(guild_id):
+    queue = queues.get(guild_id)
+
+    if not queue:
+        print("No queue for this guild")
+        return None
+
+    deck = queue.deck
+    print(f"This is the deck: {deck}")
+
+    if not deck:
+        del queues[guild_id]
+        print("Queue is empty")
+        return None
+
+    nextElement = queue.nextInQueue()
+
+    return nextElement
+
+def queue_add_element(guild_id, fileName):
+    if queues.get(guild_id):
+        queues[guild_id].addToQueue(fileName)
+    else:
+        queue = MemeQueue(guild_id)
+        queue.addToQueue(fileName)
+        queues[guild_id] = queue

@@ -1,6 +1,7 @@
 import time
 import ffmpeg 
 from pytube import YouTube
+from errors import errors
 
 def download_convert(url, fileName, start, end, audiofile_path):
     yt = YouTube(url)
@@ -11,7 +12,7 @@ def download_convert(url, fileName, start, end, audiofile_path):
         time.sleep(1)
         sleptFor += 1
         if sleptFor > 20:
-            raise Exception("Timeout while downloading")
+            raise errors.AudioDownloadError("Timeout while downloading")
             
     stream = ffmpeg.input(f"{audiofile_path}{fileName}.mp4")
     stream = stream.audio.filter("atrim", start=start, end=end)

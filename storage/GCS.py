@@ -28,10 +28,10 @@ def upload_blob(source_file_name):
     print(f"File {source_file_name} uploaded to {destination_blob_name} in {bucket_name} bucket.")
 
 
-def download_blob(storage_object_name):
+def download_blob(storage_object_name, audiofile_path):
     bucket_name = "memr-audiofiles"
     source_blob_name = storage_object_name
-    destination_file_name = f"./{storage_object_name}"
+    destination_file_name = f"../{audiofile_path}{storage_object_name}"
 
     storage_client = storage.Client()
 
@@ -46,9 +46,9 @@ def delete_blob(storage_object_name):
     bucket_name = "memr-audiofiles"
     source_blob_name = storage_object_name
 
-    sotrage_client = storage.Client()
+    storage_client = storage.Client()
 
-    bucket = sotrage_client.bucket(bucket_name)
+    bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(source_blob_name)
     blob.delete()
 
@@ -58,6 +58,15 @@ def delete_blob(storage_object_name):
         print(f"Could not delete {source_blob_name}")
 
 
+def blob_exists(storage_object_name):
+    bucket_name = "memr-audiofiles"
+    
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.get_blob(storage_object_name)
+
+    return blob.blob_exists()
 
 
 

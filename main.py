@@ -6,10 +6,11 @@ import uuid
 import re
 
 from tinydb import TinyDB, Query
-import util.helpers
-import util.audio_tools
-import storage.mongo_storage
-import storage.GCS
+from util import helpers
+from util import audio_tools
+from storage import mongo_storage
+from storage import GCS
+from errors import errors
 
 
 # Instantiate Discord API client
@@ -77,10 +78,10 @@ async def addmeme(ctx, memeName, url, start, end):
     - Uploads file to GCS and cleans up remaining files
     """
 
-    timecode_valid = helpers.check_valid_timecode(memeName, start, end)
-
-    if not type(timecode_valid) == int:
-        await ctx.send(timecode_valid)
+    try:
+        timecode_valid = helpers.check_valid_timecode(memeName, start, end)
+    except:
+        await ctx.send("Invalid timestamps. Try again")
 
     guild_id = str(ctx.guild.id)
     stored_meme = mongo_storage.get_one_object(guild_id, memeName)
@@ -90,15 +91,17 @@ async def addmeme(ctx, memeName, url, start, end):
 
     memeID = uuid.uuid1().hex
     fileName = memeID + " - " + memeName
+    startSeconds = timecode_valid[0]
+    endSeconds = timecode_valid[1]
 
     try:
-        audio_tools.download_convert(url, fileName, start, end, audiofile_path)
-    except:
-        print("Download and/or conversion failed")
+        audio_tools.download_convert(url, fileName, startSeconds, endSeconds, audiofile_path)
+    except errors.AudioConversionError as e:
+        print(e)
         await ctx.send("Download and/or conversion failed")
         return
 
-    saved_in_mongo = mongo_storage.save_object(guild_id, memeName, fileName, start, end)
+    saved_in_mongo = mongo_storage.save_object(guild_id, memeName, fileName, startSeconds, endSeconds, url)
     if not saved_in_mongo:
         await ctx.send(f"Saving {memeName} to database failed. Please try again.")
 
@@ -129,81 +132,66 @@ async def m(ctx, memeName):
     Recalls meme with chosen name argument.
     """
 
-    guild_id = str(ctx.guild.id)
-    docToPlay = mongo_storage.get_one_object(guild_id, memeName)
-    if not docToPlay:
-        await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes or \"$addmeme\" to register a new meme.")
-        return
-
-    path = docToPlay.get("path")
-
-    # Connect to voice channel
     try:
         vc = await connect_vc(ctx.message.author.voice.channel)
     except:
-        await ctx.send("Could not connect or find Voice Client. Try again.")
+        await ctx.send("Could not connect or find Voice Client. Make sure you're in a voice channel to begin with.")
         return
 
-    # Function for handling errors and queueing next clip
+    guild_id = str(ctx.guild.id)
+    memeToPlay = mongo_storage.get_one_object(guild_id, memeName)
+    if not memeToPlay:
+        await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes or \"$addmeme\" to register a new meme.")
+        return
+
+
+    # Function for handling what happens after playing.
     def afterHandler(error):
         if error:
             print(error)
             ctx.send("An error has ocurred: ", error)
             pass
 
-        qdb = TinyDB("queue.json")
-        
-        if not qdb.all():
+        nextElement = helpers.queue_get_next(guild_id)
+
+        if not nextElement:
             print("Done with queue.")
             return
         else:
-            doc = qdb.all()[0]
-
-            qpath = doc["path"]
-            docID = doc.doc_id
-
-            qdb.remove(doc_ids=[docID])
-
-            vc.play(discord.FFmpegPCMAudio(qpath), after=afterHandler)
+            play(guild_id, vc, afterHandler, fileName, audiofile_path)
 
 
-    # Playing audio
-    if not vc.is_playing():
-        vc.play(discord.FFmpegPCMAudio(path), after=afterHandler)
-    else:
-        addToQueue(memeName, path)
+    fileName = memeToPlay.get("filename")
 
+    play(guild_id, vc, afterHandler, fileName, audiofile_path)
 
-# Removes meme audio file and DB entry
-@client.command()
-async def remove(ctx, memeName):
-    collection = db[str(ctx.guild.id)]
-    docToRemove = collection.find_one({"name": memeName})
-
-    if not docToRemove:
-        await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes.")
-        return
     
-    memePath = docToRemove.get("path")
 
-    if os.path.exists(memePath):
-        os.remove(memePath)
-        print(f"Removed audio file for \"{memeName}\".")
 
-    docToRemove_id = docToRemove.get("_id")
-    collection.delete_one({"_id": docToRemove_id})
+@client.command()
+async def delete(ctx, memeName):
+    guild_id = str(ctx.guild.id)
+    memeToDelete = mongo_storage.get_one_object(guild_id, memeName)
+    if not memeToDelete:
+        await ctx.send("This meme is not in the database. Use \"$allmemes\" command to see all memes you have saved.")
+        return
+
+    memeObjName = memeToDelete.get("filename")
+    memeExists = GCS.blob_exists(memeObjName)
+
+    if memeExists:
+        GCS.delete_blob(memeObjName)
+        print(f"Removed {memeObjName} from GCS")
+
+    memeObjID = memeToDelete.get("_id")
+    deleted = mongo_storage.delete_object(guild_id, memeObjID)
+
+    if not deleted:
+        ctx.send(f"Could not remove \"{memeObjName}\" from database.")
     
     await ctx.send(f"Removed \"{memeName}\" from DB.")
 
 
-# Callback function to add to-be-played memes to a playback queue
-def addToQueue(memeName, path):
-    qdb = TinyDB("queue.json")
-    qdb.insert({"name": memeName, "path": path})
-    print(f"\"{memeName}\" added to queue")        
-
-
-# Connects bot to a voice channel
 async def connect_vc(channel): 
     # Connects to Voice Client if not already connected and returns it.
     vc_list = client.voice_clients
@@ -218,5 +206,27 @@ async def connect_vc(channel):
             print(f"Already connected to Voice Client {vc}")
     return vc
     
+
+def play(guild_id, vc, afterHandler, fileName, audiofile_path):
+    filePath = f"{audiofile_path}{fileName}"
+
+    try:
+        GCS.download_blob(fileName, audiofile_path)
+    except Exception as e:
+        print(f"Error: {e}")
+        
+    try:
+        if not vc.is_playing():
+            vc.play(discord.FFmpegPCMAudio(filePath), after=afterHandler)
+        else:
+            helpers.queue_add_element(guild_id, fileName)
+    except Exception as e:
+        print(f"Playback Error: {e}")
+
+    try:
+        os.remove(f"{audiofile_path}{fileName}.ogg")
+    except Exception as e:
+        print(f"Error: {e}")
+
 
 client.run(discordToken)
