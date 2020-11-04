@@ -2,6 +2,8 @@ import re
 from collections import deque
 from errors import errors
 
+
+
 def convert_timecode_to_seconds(user_time):
     """ Converts user timecode format to seconds. """
 
@@ -75,8 +77,6 @@ def check_valid_timecode(memeName, start, end):
 
     return (start, end)
             
-    
-
 
 class MemeQueue:
     """
@@ -98,6 +98,8 @@ class MemeQueue:
 
 
 queues = {}
+
+
 def queue_get_next(guild_id):
     queue = queues.get(guild_id)
 
@@ -116,6 +118,7 @@ def queue_get_next(guild_id):
     nextElement = queue.nextInQueue()
 
     return nextElement
+
 
 def queue_add_element(guild_id, fileName):
     if queues.get(guild_id):

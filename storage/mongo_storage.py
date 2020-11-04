@@ -2,6 +2,8 @@ import os
 import pymongo
 from pymongo import MongoClient
 
+
+
 mongoToken = os.getenv("MONGO_TOKEN")
 cluster = MongoClient(mongoToken, 3000)
 db = cluster["Memr"]
@@ -46,9 +48,5 @@ def delete_object(guild_id, objID):
         print(f"Object id - {objID} does not exist in collection - {guild_id}")
         return False
 
-    collection.delete_one(objID)
+    collection.find_one_and_delete({"_id": objID})
     return True
-
-
-# print(get_one_object("361113156883316737", "sakdjfke"))
-# print(get_all_objects("12347235390234929345"))

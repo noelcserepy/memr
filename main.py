@@ -4,6 +4,7 @@ from discord.ext import commands
 import os
 import uuid
 import re
+import time
 
 from tinydb import TinyDB, Query
 from util import helpers
@@ -13,11 +14,11 @@ from storage import GCS
 from errors import errors
 
 
-# Instantiate Discord API client
+
 discordToken = os.getenv("DISCORD_BOT_TOKEN")
 client = commands.Bot(command_prefix='$')
 
-audiofile_path = "../audiofiles/"
+audiofile_path = "./audiofiles/"
 
 @client.event
 async def on_ready():
@@ -42,9 +43,8 @@ async def test(ctx, arg):
 
 @client.command()
 async def allmemes(ctx):
-    """
-    Returns a list of all memes saved in user's guild
-    """
+    """ Returns a list of all memes saved in user's guild """
+
     guild_id = str(ctx.guild.id)
 
     allMemes = mongo_storage.get_all_objects(guild_id)
@@ -96,9 +96,9 @@ async def addmeme(ctx, memeName, url, start, end):
 
     try:
         audio_tools.download_convert(url, fileName, startSeconds, endSeconds, audiofile_path)
-    except errors.AudioConversionError as e:
-        print(e)
-        await ctx.send("Download and/or conversion failed")
+    except (errors.AudioConversionError, errors.AudioDownloadError) as e:
+        print(f"Error: {e}")
+        await ctx.send(f"Error: {e}")
         return
 
     saved_in_mongo = mongo_storage.save_object(guild_id, memeName, fileName, startSeconds, endSeconds, url)
@@ -128,9 +128,7 @@ async def addmeme(ctx, memeName, url, start, end):
 
 @client.command()
 async def m(ctx, memeName):
-    """
-    Recalls meme with chosen name argument.
-    """
+    """ Recalls meme with chosen name argument. """
 
     try:
         vc = await connect_vc(ctx.message.author.voice.channel)
@@ -145,8 +143,9 @@ async def m(ctx, memeName):
         return
 
 
-    # Function for handling what happens after playing.
     def afterHandler(error):
+        """ Function for handling what happens after playing. """
+        
         if error:
             print(error)
             ctx.send("An error has ocurred: ", error)
@@ -158,18 +157,20 @@ async def m(ctx, memeName):
             print("Done with queue.")
             return
         else:
-            play(guild_id, vc, afterHandler, fileName, audiofile_path)
+            play(guild_id, vc, afterHandler, fullFileName, audiofile_path)
 
 
-    fileName = memeToPlay.get("filename")
+    fullFileName = memeToPlay.get("filename")
 
-    play(guild_id, vc, afterHandler, fileName, audiofile_path)
+    play(guild_id, vc, afterHandler, fullFileName, audiofile_path)
 
     
 
 
 @client.command()
 async def delete(ctx, memeName):
+    """ Deletes meme from MongoDB and GCS. """
+
     guild_id = str(ctx.guild.id)
     memeToDelete = mongo_storage.get_one_object(guild_id, memeName)
     if not memeToDelete:
@@ -193,7 +194,8 @@ async def delete(ctx, memeName):
 
 
 async def connect_vc(channel): 
-    # Connects to Voice Client if not already connected and returns it.
+    """ Connects to Voice Client if not already connected and returns it. """
+
     vc_list = client.voice_clients
     
     if not vc_list:
@@ -207,24 +209,31 @@ async def connect_vc(channel):
     return vc
     
 
-def play(guild_id, vc, afterHandler, fileName, audiofile_path):
-    filePath = f"{audiofile_path}{fileName}"
+def play(guild_id, vc, afterHandler, fullFileName, audiofile_path):
+    """ Downloads, plays a given meme from GCS and then deletes it. """
+
+    filePath = f"{audiofile_path}{fullFileName}"
 
     try:
-        GCS.download_blob(fileName, audiofile_path)
+        GCS.download_blob(fullFileName, audiofile_path)
+        if not os.path.exists(filePath):
+            raise errors.StorageError("Audio failed to download")
     except Exception as e:
         print(f"Error: {e}")
-        
+
     try:
         if not vc.is_playing():
+            print("now play")
             vc.play(discord.FFmpegPCMAudio(filePath), after=afterHandler)
+            print("done play", vc.source)
         else:
-            helpers.queue_add_element(guild_id, fileName)
+            helpers.queue_add_element(guild_id, fullFileName)
     except Exception as e:
         print(f"Playback Error: {e}")
 
     try:
-        os.remove(f"{audiofile_path}{fileName}.ogg")
+        print("deleting")
+        os.remove(filePath)
     except Exception as e:
         print(f"Error: {e}")
 

@@ -10,7 +10,7 @@ class StorageError(MemrError):
 class MongoError(MemrError):
     """ Base error class for MongoDB related errors. """
 
-class AudioDownloadError(MemrError):
+class YTDownloadError(MemrError):
     """ Base error class for Audio Download related errors. """
 
 class AudioConversionError(MemrError):

@@ -4,21 +4,19 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-watchdog = "*"
 autopep8 = "*"
 pylint = "*"
 
 [packages]
 ffmpeg-python = "==0.2.0"
-pytube3 = "==9.6.4"
 pymongo = "*"
 tinydb = "==4.1.1"
-"discord.py" = "==1.3.4"
+"discord.py" = "*"
 dnspython = "*"
 pynacl = "*"
-boto3 = "*"
 google-cloud-storage = "*"
 google-auth = "*"
+pytube3 = {editable = true, git = "https://github.com/nficano/pytube", ref = "v9.7.0"}
 
 [requires]
 python_version = "3.8"
