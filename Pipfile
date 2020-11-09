@@ -8,7 +8,7 @@ autopep8 = "*"
 pylint = "*"
 
 [packages]
-ffmpeg-python = "==0.2.0"
+ffmpeg-python = "*"
 pymongo = "*"
 tinydb = "==4.1.1"
 "discord.py" = "*"
@@ -17,6 +17,7 @@ pynacl = "*"
 google-cloud-storage = "*"
 google-auth = "*"
 pytube3 = {editable = true, git = "https://github.com/nficano/pytube", ref = "v9.7.0"}
+pydub = "*"
 
 [requires]
 python_version = "3.8"

@@ -5,8 +5,11 @@ import os
 import uuid
 import re
 import time
+import io
+import tempfile
 
-from tinydb import TinyDB, Query
+from pydub import AudioSegment
+from pydub import playback
 from util import helpers
 from util import audio_tools
 from storage import mongo_storage
@@ -112,9 +115,8 @@ async def addmeme(ctx, memeName, url, start, end):
         try:
             GCS.upload_blob(f"{audiofile_path}{fileName}.ogg")
             os.remove(f"{audiofile_path}{fileName}.ogg")
-        except:
-            raise Exception("File could not be uploaded to GCS")
-            return
+        except Exception as e:
+            print(f"Error: {e}")
     else:
         print("ogg doesn't exist")
 
@@ -128,7 +130,10 @@ async def addmeme(ctx, memeName, url, start, end):
 
 @client.command()
 async def m(ctx, memeName):
-    """ Recalls meme with chosen name argument. """
+    """ 
+    Command for playing memes.
+    Connects to Voice Client, gets fileName from MongoDB and calls play(). 
+    """
 
     try:
         vc = await connect_vc(ctx.message.author.voice.channel)
@@ -142,29 +147,13 @@ async def m(ctx, memeName):
         await ctx.send("This meme is not in the database. Use \"$allmemes\" command for all memes or \"$addmeme\" to register a new meme.")
         return
 
-
-    def afterHandler(error):
-        """ Function for handling what happens after playing. """
-        
-        if error:
-            print(error)
-            ctx.send("An error has ocurred: ", error)
-            pass
-
-        nextElement = helpers.queue_get_next(guild_id)
-
-        if not nextElement:
-            print("Done with queue.")
-            return
-        else:
-            play(guild_id, vc, afterHandler, fullFileName, audiofile_path)
-
-
     fullFileName = memeToPlay.get("filename")
 
-    play(guild_id, vc, afterHandler, fullFileName, audiofile_path)
+    helpers.queue_add_element(guild_id, fullFileName)
 
-    
+    play(ctx, guild_id, vc)
+
+
 
 
 @client.command()
@@ -193,6 +182,45 @@ async def delete(ctx, memeName):
     await ctx.send(f"Removed \"{memeName}\" from DB.")
 
 
+def play(ctx, guild_id, vc):
+    """ Downloads, plays a given meme from GCS and then deletes it. """
+
+    def after_handler(error):
+        """ Function for handling what happens after playing. """
+
+        if error:
+            print(error)
+            ctx.send("An error has ocurred: ", error)
+            pass
+        
+        helpers.queue_remove_current(guild_id)
+        play(ctx, guild_id, vc)
+
+    print(ctx)
+
+    currentElementInQueue = helpers.queue_get_current(guild_id)
+    if not currentElementInQueue:
+        print("Done with queue")
+        return
+
+    try:
+        _, tempMemeAudio = tempfile.mkstemp(suffix=".ogg", dir=audiofile_path)
+        print("tempMemeAudio: ", tempMemeAudio)
+        GCS.download_blob(currentElementInQueue, tempMemeAudio)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    audioSource = discord.FFmpegPCMAudio(tempMemeAudio, options="-f s16le -acodec pcm_s16le")
+
+    try:
+        if not vc.is_playing():
+            vc.play(audioSource, after=after_handler)
+    except Exception as e:
+        print(f"Playback Error: {e}")
+
+    os.remove(tempMemeAudio)
+
+
 async def connect_vc(channel): 
     """ Connects to Voice Client if not already connected and returns it. """
 
@@ -207,35 +235,6 @@ async def connect_vc(channel):
         if vc.is_connected():
             print(f"Already connected to Voice Client {vc}")
     return vc
-    
-
-def play(guild_id, vc, afterHandler, fullFileName, audiofile_path):
-    """ Downloads, plays a given meme from GCS and then deletes it. """
-
-    filePath = f"{audiofile_path}{fullFileName}"
-
-    try:
-        GCS.download_blob(fullFileName, audiofile_path)
-        if not os.path.exists(filePath):
-            raise errors.StorageError("Audio failed to download")
-    except Exception as e:
-        print(f"Error: {e}")
-
-    try:
-        if not vc.is_playing():
-            print("now play")
-            vc.play(discord.FFmpegPCMAudio(filePath), after=afterHandler)
-            print("done play", vc.source)
-        else:
-            helpers.queue_add_element(guild_id, fullFileName)
-    except Exception as e:
-        print(f"Playback Error: {e}")
-
-    try:
-        print("deleting")
-        os.remove(filePath)
-    except Exception as e:
-        print(f"Error: {e}")
 
 
 client.run(discordToken)

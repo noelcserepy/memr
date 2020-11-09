@@ -22,3 +22,21 @@ def download_convert(url, fileName, start, end, audiofile_path):
     stream = ffmpeg.output(stream, f"{audiofile_path}{fileName}.ogg")
     ffmpeg.run(stream)
 
+
+def get_audio_source(audioBytes):
+    audioBytesEn = audioBytes.decode().encode()
+    # audioBytesObj = BytesIO(audioBytes)
+    # stream = AudioSegment.from_ogg(audioBytesObj)
+    # audioSource = discord.PCMAudio(audioBytesObj)
+    # audioSource2 = discord.FFmpegPCMAudio(audioBytesObj)
+    # audioSource3 = discord.AudioSource()
+
+    audioSource, _ = (ffmpeg
+        .input(audioBytes)
+        .output('-', format="s16le", acodec='pcm_s16le', ac=1, ar='48k')
+        .overwrite_output()
+        .run(capture_stdout=True)
+    )
+    
+    stream = ffmpeg.input(audioBytes)
+    stream = ffmpeg.output(stream, "pipe:", format="s16le", acodec='pcm_s16le', ac=1, ar='48k')

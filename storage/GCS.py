@@ -1,4 +1,5 @@
 import os
+import io
 import google.auth
 from google.cloud import storage
 
@@ -29,10 +30,9 @@ def upload_blob(source_file_name):
     print(f"File {source_file_name} uploaded to {destination_blob_name} in {bucket_name} bucket.")
 
 
-def download_blob(storage_object_name, audiofile_path):
+def download_blob(storage_object_name, destination_file_name):
     bucket_name = "memr-audiofiles"
     source_blob_name = storage_object_name
-    destination_file_name = f"{audiofile_path}{storage_object_name}"
 
     storage_client = storage.Client()
 
@@ -41,6 +41,20 @@ def download_blob(storage_object_name, audiofile_path):
     blob.download_to_filename(destination_file_name)
 
     print(f"Blob {source_blob_name} downloaded to {audiofile_path}.")
+
+
+def download_blob_bytes(storage_object_name):
+    bucket_name = "memr-audiofiles"
+    source_blob_name = storage_object_name
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    audioByte = blob.download_as_bytes(raw_download=False)
+
+    print(f"Blob {source_blob_name} downloaded as bytes")
+    return audioByte
 
 
 def delete_blob(storage_object_name):
