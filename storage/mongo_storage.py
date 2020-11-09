@@ -21,19 +21,14 @@ def get_one_object(guild_id, objName):
     return obj
 
 
-def save_object(guild_id, objName, fileName, start, end, youtubeUrl):
+def save_object(guild_id, memeData):
     collection = db[guild_id]
-    obj = collection.find_one({"name": objName})
+    memeName = memeData.get("name")
+    obj = collection.find_one({"name": memeName})
 
     if not obj:
-        collection.insert_one({
-            "name": objName, 
-            "filename": f"{fileName}.ogg",
-            "start": start,
-            "end": end,
-            "youtubeUrl": youtubeUrl
-        })
-        print(f"Inserted {objName} into collection {guild_id}")
+        collection.insert_one(memeData)
+        print(f"Inserted {memeName} into collection {guild_id}")
         return True
     else:
         print(f"Object already exists")

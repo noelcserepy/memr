@@ -15,3 +15,6 @@ class YTDownloadError(MemrError):
 
 class AudioConversionError(MemrError):
     """ Base error class for Audio Conversion related errors. """
+
+class AudioDownloadError(MemrError):
+    """ Base error class for Audio Download related errors. """

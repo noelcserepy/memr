@@ -5,15 +5,11 @@ import os
 import uuid
 import re
 import time
-import io
 import tempfile
+import shutil
 
-from pydub import AudioSegment
-from pydub import playback
-from util import helpers
-from util import audio_tools
-from storage import mongo_storage
-from storage import GCS
+from util import audio_tools, helpers, queue, temp_ctx_manager
+from storage import GCS, mongo_storage
 from errors import errors
 
 
@@ -149,7 +145,10 @@ async def m(ctx, memeName):
 
     fullFileName = memeToPlay.get("filename")
 
-    helpers.queue_add_element(guild_id, fullFileName)
+    queue.add_element(guild_id, fullFileName)
+
+    if not os.path.exists(f"{audiofile_path}{guild_id}"):
+        os.mkdir(f"{audiofile_path}{guild_id}")
 
     play(ctx, guild_id, vc)
 
@@ -193,32 +192,28 @@ def play(ctx, guild_id, vc):
             ctx.send("An error has ocurred: ", error)
             pass
         
-        helpers.queue_remove_current(guild_id)
+        queue.remove_current(guild_id)
+        
+        currentElementInQueue = queue.get_current(guild_id)
+        if not currentElementInQueue:
+            try:
+                print(f"DELETING: {audiofile_path}{guild_id}")
+                shutil.rmtree(f"{audiofile_path}{guild_id}")
+                print("Done with queue")
+                return
+            except Exception as e:
+                print(f"Error: ", e)
+                return
+
         play(ctx, guild_id, vc)
 
-    print(ctx)
+    currentElementInQueue = queue.get_current(guild_id)
 
-    currentElementInQueue = helpers.queue_get_current(guild_id)
-    if not currentElementInQueue:
-        print("Done with queue")
-        return
-
-    try:
-        _, tempMemeAudio = tempfile.mkstemp(suffix=".ogg", dir=audiofile_path)
-        print("tempMemeAudio: ", tempMemeAudio)
-        GCS.download_blob(currentElementInQueue, tempMemeAudio)
-    except Exception as e:
-        print(f"Error: {e}")
-
-    audioSource = discord.FFmpegPCMAudio(tempMemeAudio, options="-f s16le -acodec pcm_s16le")
-
-    try:
+    with temp_ctx_manager.make_tempfile(f"{audiofile_path}{guild_id}") as tempFileDir:
+        GCS.download_blob(currentElementInQueue, tempFileDir)
+        audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
         if not vc.is_playing():
             vc.play(audioSource, after=after_handler)
-    except Exception as e:
-        print(f"Playback Error: {e}")
-
-    os.remove(tempMemeAudio)
 
 
 async def connect_vc(channel): 

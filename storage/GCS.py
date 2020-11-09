@@ -1,6 +1,7 @@
 import os
 import io
 import google.auth
+import asyncio
 from google.cloud import storage
 
 
@@ -40,21 +41,7 @@ def download_blob(storage_object_name, destination_file_name):
     blob = bucket.blob(source_blob_name)
     blob.download_to_filename(destination_file_name)
 
-    print(f"Blob {source_blob_name} downloaded to {audiofile_path}.")
-
-
-def download_blob_bytes(storage_object_name):
-    bucket_name = "memr-audiofiles"
-    source_blob_name = storage_object_name
-
-    storage_client = storage.Client()
-
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(source_blob_name)
-    audioByte = blob.download_as_bytes(raw_download=False)
-
-    print(f"Blob {source_blob_name} downloaded as bytes")
-    return audioByte
+    print(f"Blob {source_blob_name} downloaded to {destination_file_name}.")
 
 
 def delete_blob(storage_object_name):
