@@ -18,3 +18,6 @@ class AudioConversionError(MemrError):
 
 class AudioDownloadError(MemrError):
     """ Base error class for Audio Download related errors. """
+
+class MissingArguments(MemrError):
+    """ Base error class for Missing Arguments related errors. """

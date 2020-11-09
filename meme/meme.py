@@ -7,7 +7,7 @@ import ffmpeg
 from pytube import YouTube
 from errors import errors
 from storage import GCS, mongo_storage
-from util import helpers, queue, temp_ctx_manager
+from util import timecode, queue, temp_ctx_manager
 
 class Meme():
     def __init__(self, ctx, memeName=None, url=None, start=None, end=None, audiofile_path=None):
@@ -76,7 +76,7 @@ class Meme():
                 GCS.upload_blob(f"{self.audiofile_path}{self.fileName}")
                 os.remove(f"{self.audiofile_path}{self.fileName}")
             else:
-                print("ogg doesn't exist")
+                print("GCS_add() - ogg doesn't exist")
         except Exception as e:
                 print(f"Error: {e}")
 
@@ -100,7 +100,7 @@ class Meme():
 
     def convert_timecodes(self):
         try:
-            valid_timecodes = helpers.check_valid_timecode(self.memeName, self.start, self.end)
+            valid_timecodes = timecode.check_valid_timecode(self.memeName, self.start, self.end)
             self.startSeconds = valid_timecodes[0]
             self.endSeconds = valid_timecodes[1]
         except Exception as e:
@@ -140,3 +140,30 @@ class Meme():
         except Exception as e:
             print(f"Error: {e}")
 
+    
+    def store_me(self):
+        try:
+            values = [
+                self.ctx,
+                self.memeName,
+                self.url,
+                self.start,
+                self.end,
+                self.audiofile_path
+            ]
+
+            if not all(v is not None for v in values):
+                raise errors.MissingArguments("store_me() was called without providing the correct arguments")
+                
+            if self.mongo_exists():
+                raise errors.MongoError("Meme already exists in MongoDB")
+
+            self.convert_timecodes()
+            self.make_memeTag_and_fileName()
+            self.download_audio()
+            self.mongo_add()
+            self.GCS_add()
+
+            await self.ctx.send(f"\"{self.memeName}\" meme has been added to your collection! Use it with the command \"$m {self.memeName}\"")
+        except Exception as e:
+            print("Error: ", e)

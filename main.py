@@ -10,6 +10,7 @@ import shutil
 
 from util import audio_tools, helpers, queue, temp_ctx_manager
 from storage import GCS, mongo_storage
+from meme import Meme
 from errors import errors
 
 
@@ -76,52 +77,9 @@ async def addmeme(ctx, memeName, url, start, end):
     - Converts audio file to ogg 
     - Uploads file to GCS and cleans up remaining files
     """
-
-    try:
-        timecode_valid = helpers.check_valid_timecode(memeName, start, end)
-    except:
-        await ctx.send("Invalid timestamps. Try again")
-
-    guild_id = str(ctx.guild.id)
-    stored_meme = mongo_storage.get_one_object(guild_id, memeName)
-    if stored_meme:
-        await ctx.send("Meme name already exists. Try again.")
-        return
-
-    memeID = uuid.uuid1().hex
-    fileName = memeID + " - " + memeName
-    startSeconds = timecode_valid[0]
-    endSeconds = timecode_valid[1]
-
-    try:
-        audio_tools.download_convert(url, fileName, startSeconds, endSeconds, audiofile_path)
-    except (errors.AudioConversionError, errors.AudioDownloadError) as e:
-        print(f"Error: {e}")
-        await ctx.send(f"Error: {e}")
-        return
-
-    saved_in_mongo = mongo_storage.save_object(guild_id, memeName, fileName, startSeconds, endSeconds, url)
-    if not saved_in_mongo:
-        await ctx.send(f"Saving {memeName} to database failed. Please try again.")
-
-    mp4Exists = os.path.exists(f"{audiofile_path}{fileName}.mp4")
-    oggExists = os.path.exists(f"{audiofile_path}{fileName}.ogg")
-
-    if oggExists:
-        try:
-            GCS.upload_blob(f"{audiofile_path}{fileName}.ogg")
-            os.remove(f"{audiofile_path}{fileName}.ogg")
-        except Exception as e:
-            print(f"Error: {e}")
-    else:
-        print("ogg doesn't exist")
-
-    if mp4Exists:
-        os.remove(f"{audiofile_path}{fileName}.mp4")
-    else:
-        print("mp4 doesn't exist.")
-
-    await ctx.send(f"\"{memeName}\" meme has been added to your collection! Use it with the command $meme {memeName}")
+    
+    newMeme = meme.Meme(ctx, memeName=memeName, url=url, start=start, end=end)
+    newMeme.store_me()
 
 
 @client.command()
