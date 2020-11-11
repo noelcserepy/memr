@@ -3,6 +3,7 @@ import io
 import google.auth
 import asyncio
 from google.cloud import storage
+from errors import errors
 
 
 
@@ -17,10 +18,13 @@ def list_buckets():
         print(bucket.name)
 
 
-def upload_blob(source_file_name):
+def upload_blob(audiofile_path, fileName):
     bucket_name = "memr-audiofiles"
-    source_file_name = source_file_name
-    destination_blob_name = source_file_name.split("/")[-1]
+    source_file_name = f"{audiofile_path}{fileName}"
+    destination_blob_name = fileName
+
+    if not os.path.exists(source_file_name):
+        raise errors.GCSError("Source file does not exist.")
 
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -57,7 +61,7 @@ def delete_blob(storage_object_name):
     if not blob.exists():
         print(f"Deleted {source_blob_name} blob.")
     else:
-        print(f"Could not delete {source_blob_name}")
+        raise errors.GCSError(f"Could not delete {source_blob_name}")
 
 
 def blob_exists(storage_object_name):

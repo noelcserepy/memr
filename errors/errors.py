@@ -7,6 +7,9 @@ class TimecodeError(MemrError):
 class StorageError(MemrError):
     """ Base error class for Storage related errors. """
 
+class GCSError(MemrError):
+    """ Base error class for Storage related errors. """
+
 class MongoError(MemrError):
     """ Base error class for MongoDB related errors. """
 

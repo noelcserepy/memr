@@ -69,19 +69,24 @@ async def allmemes(ctx):
 async def addmeme(ctx, memeName, url, start, end):
     """
     Command for adding memes.
-
-    - Checks if inputs are correct
-    - Checks if meme already exists in database
     - Downloads audio from youtube
     - Trims audio file to the provided start and end timestamps
-    - Converts audio file to ogg 
+    - Converts audio file to ogg
     - Uploads file to GCS and cleans up remaining files
     """
     
-    newMeme = meme.Meme(ctx, memeName=memeName, url=url, start=start, end=end)
-    newMeme.store_me()
+    newMeme = meme.Meme(ctx, memeName=memeName, url=url, start=start, end=end, audiofile_path=audiofile_path)
+    await newMeme.store_me()
 
 
+@client.command()
+async def delete(ctx, memeName):
+    """ Deletes meme from MongoDB and GCS. """
+
+    memeToDelete = meme.Meme(ctx, memeName=memeName)
+    await memeToDelete.delete_me()
+
+    
 @client.command()
 async def m(ctx, memeName):
     """ 
@@ -111,36 +116,8 @@ async def m(ctx, memeName):
     play(ctx, guild_id, vc)
 
 
-
-
-@client.command()
-async def delete(ctx, memeName):
-    """ Deletes meme from MongoDB and GCS. """
-
-    guild_id = str(ctx.guild.id)
-    memeToDelete = mongo_storage.get_one_object(guild_id, memeName)
-    if not memeToDelete:
-        await ctx.send("This meme is not in the database. Use \"$allmemes\" command to see all memes you have saved.")
-        return
-
-    memeObjName = memeToDelete.get("filename")
-    memeExists = GCS.blob_exists(memeObjName)
-
-    if memeExists:
-        GCS.delete_blob(memeObjName)
-        print(f"Removed {memeObjName} from GCS")
-
-    memeObjID = memeToDelete.get("_id")
-    deleted = mongo_storage.delete_object(guild_id, memeObjID)
-
-    if not deleted:
-        ctx.send(f"Could not remove \"{memeObjName}\" from database.")
-    
-    await ctx.send(f"Removed \"{memeName}\" from DB.")
-
-
 def play(ctx, guild_id, vc):
-    """ Downloads, plays a given meme from GCS and then deletes it. """
+    """ Downloads and plays a given meme from GCS. """
 
     def after_handler(error):
         """ Function for handling what happens after playing. """

@@ -1,6 +1,7 @@
 import os
 import pymongo
 from pymongo import MongoClient
+from errors import errors
 
 
 
@@ -29,19 +30,10 @@ def save_object(guild_id, memeData):
     if not obj:
         collection.insert_one(memeData)
         print(f"Inserted {memeName} into collection {guild_id}")
-        return True
     else:
-        print(f"Object already exists")
-        return False
+        raise errors.MongoError("Object already exists")
     
 
 def delete_object(guild_id, objID):
     collection = db[guild_id]
-    obj = collection.find_one({"_id": objID})
-
-    if not obj:
-        print(f"Object id - {objID} does not exist in collection - {guild_id}")
-        return False
-
     collection.find_one_and_delete({"_id": objID})
-    return True

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cb6ed2807a3915ddb6b26807b1c14ef78fa0fcedea8899b7afc109dc347c723b"
+            "sha256": "eea77624937de3f9933e38765a2c2563b0e6d26a78121baf1f25ff67c358b502"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -61,10 +61,10 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3",
-                "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"
+                "sha256:1f422849db327d534e3d0c5f02a263458c3955ec0aae4ff09b95f195c59f4edd",
+                "sha256:f05def092c44fbf25834a51509ef6e631dc19765ab8a57b4e7ab85531f0a9cf4"
             ],
-            "version": "==2020.6.20"
+            "version": "==2020.11.8"
         },
         "cffi": {
             "hashes": [
@@ -410,7 +410,7 @@
         "pytube3": {
             "editable": true,
             "git": "https://github.com/nficano/pytube",
-            "ref": "23f12a914ffef0791a172e34fa8a4e69cd200e26"
+            "ref": "26a50cc218a37e7ee6e3fbfb1eb301b78a61bbd7"
         },
         "pytz": {
             "hashes": [

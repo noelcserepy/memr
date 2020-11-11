@@ -16,7 +16,7 @@ def convert_timecode_to_seconds(user_time):
     }
 
     if not re.match(r"^[0-9:.]+$", user_time):
-        errors.TimecodeError(replies.get("0"))
+        raise errors.TimecodeError(replies.get("0"))
         
     temp_time = user_time.split(":")
     

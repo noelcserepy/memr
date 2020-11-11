@@ -16,7 +16,7 @@ dnspython = "*"
 pynacl = "*"
 google-cloud-storage = "*"
 google-auth = "*"
-pytube3 = {editable = true, git = "https://github.com/nficano/pytube", ref = "v9.7.0"}
+pytube3 = {editable = true, git = "https://github.com/nficano/pytube"}
 pydub = "*"
 
 [requires]
