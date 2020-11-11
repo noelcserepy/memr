@@ -25,14 +25,14 @@ A meme can be a maximum of 10 seconds long.
 To play the meme just use the command "$meme" followed by the name of the meme you would like to recall. 
 
 Example:
-`$meme rickroll`
+`$m rickroll`
 
 The Memr bot will then enter the voice channel you are currently in and play the audio clip. 
 
 
 ### Other commands
 
-`$remove memeName` - Will remove a meme from the database. 
+`$delete memeName` - Will remove a meme from the database. 
 
 `$join` - Will make Memr join your current voice channel.
 
