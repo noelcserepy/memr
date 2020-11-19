@@ -9,15 +9,14 @@ pylint = "*"
 
 [packages]
 ffmpeg-python = "*"
-pymongo = "*"
-tinydb = "==4.1.1"
 "discord.py" = "*"
 dnspython = "*"
 pynacl = "*"
-google-cloud-storage = "*"
-google-auth = "*"
 pytube3 = {editable = true, git = "https://github.com/nficano/pytube"}
 pydub = "*"
+motor = "*"
+gcloud-aio-storage = "*"
+pymongo = "*"
 
 [requires]
 python_version = "3.8"

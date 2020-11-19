@@ -114,8 +114,9 @@ async def m(ctx, memeName):
             os.mkdir(f"{audiofile_path}{meme_to_play.guild_id}")
 
         await play(meme_to_play, vc)
-    except:
+    except Exception as ex:
         try:
+            print("Error: ", ex)
             await ctx.send("Something went wrong while playing. Try again.")
         except Exception as e:
             print("Error: ", e)
@@ -128,7 +129,7 @@ async def play(meme, vc):
 
     # fix this
     with temp_ctx_manager.make_tempfile(f"{audiofile_path}{meme.guild_id}") as tempFileDir:
-        GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
+        await GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
         audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
 
         if not vc.is_playing():

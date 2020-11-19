@@ -52,17 +52,17 @@ class Meme():
             if not self.failed_getting:
                 return False
 
-            timeout = 0
-            while self.failed_getting:
-                await self.mongo_get()
+            # timeout = 0
+            # while self.failed_getting:
+            #     await self.mongo_get()
 
-                if self.mongoID:
-                    return True
+            #     if self.mongoID:
+            #         return True
 
-                await asyncio.sleep(1)
-                timeout += 1
-                if timeout >= 5:
-                    raise TimeoutError("Timed out while fetching MongoDB data.")
+            #     await asyncio.sleep(1)
+            #     timeout += 1
+            #     if timeout >= 5:
+            #         raise TimeoutError("Timed out while fetching MongoDB data.")
         except:
             raise 
 
@@ -112,7 +112,7 @@ class Meme():
             "youtubeUrl": self.url
         }
 
-        mongo_storage.save_object(self.guild_id, memeData)
+        await mongo_storage.save_object(self.guild_id, memeData)
 
 
     async def mongo_get(self):
@@ -157,20 +157,22 @@ class Meme():
 
             await self.download_audio()
             await self.mongo_add()
-            GCS.upload_blob(self.audiofile_path, self.fileName)
+            await GCS.upload_blob(self.audiofile_path, self.fileName)
             os.remove(f"{self.audiofile_path}{self.fileName}")
 
+
+            # This runs when mongo.add() fails...
             await self.ctx.send(f"""
             \"{self.memeName}\" meme has been added to your collection! Use it with the command \"$m {self.memeName}\"""")
         except Exception as e:
             print("Error: ", e)
             try:
-                self.reset()
+                await self.reset()
             except Exception as e:
                 print("Error: ", e)
 
 
-    def reset(self):
+    async def reset(self):
         if not self.fileName:
             return
 
@@ -183,12 +185,12 @@ class Meme():
             os.remove(mp4Path)
 
         # GCS
-        if GCS.blob_exists(self.fileName):
-            GCS.delete_blob(self.fileName)
+        if await GCS.blob_exists(self.fileName):
+            await GCS.delete_blob(self.fileName)
 
         # Mongo
-        if mongo_storage.get_one_object(self.guild_id, self.memeName):
-            mongo_storage.delete_object(self.guild_id, self.mongoID)
+        if await mongo_storage.get_one_object(self.guild_id, self.memeName):
+            await mongo_storage.delete_object(self.guild_id, self.mongoID)
     
 
     async def delete(self):
@@ -199,17 +201,17 @@ class Meme():
             ]
             self.check_inputs(values)
                 
-            if not mongo_storage.get_one_object(self.guild_id, self.memeName):
+            if not await mongo_storage.get_one_object(self.guild_id, self.memeName):
                 await self.ctx.send("This meme is not in the database. Use \"$allmemes\" command to see all memes you have saved.")
 
             await self.mongo_get()
 
             try:
-                GCS.delete_blob(self.fileName)
+                await GCS.delete_blob(self.fileName)
             except Exception as e:
                 print("No GCS object was found when deleting. Carrying on...")
             try:
-                mongo_storage.delete_object(self.guild_id, self.mongoID)
+                await mongo_storage.delete_object(self.guild_id, self.mongoID)
             except Exception as e:
                 print("No MongoDB object was found when deleting. Carrying on...")
 
