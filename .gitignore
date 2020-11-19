@@ -1,4 +1,4 @@
-/audiofiles/*
+/temp/*
 /.env
 /playground.py
 /Dockerfile

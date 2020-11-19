@@ -24,3 +24,13 @@ class AudioDownloadError(MemrError):
 
 class MissingArguments(MemrError):
     """ Base error class for Missing Arguments related errors. """
+
+class VoiceClientError(MemrError):
+    """ Base error class for Voice Client related errors. """
+
+class QueueError(MemrError):
+    """ Base error class for Queue related errors. """
+
+class PlayError(MemrError):
+    """ Base error class for Play related errors. """
+    
