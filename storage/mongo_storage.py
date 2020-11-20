@@ -1,21 +1,22 @@
 import os
 import motor.motor_asyncio
-# from pymongo import MongoClient
 from errors.errors import MongoError
 
 
 
 mongoToken = os.getenv("MONGO_TOKEN")
 client = motor.motor_asyncio.AsyncIOMotorClient(mongoToken)
-# cluster = MongoClient(mongoToken, 3000)
 db = client["Memr"]
 
 
 async def get_all_objects(guild_id):
     try:
         collection = db[guild_id]
-        allObjects = await [post for post in collection.find()]
-        return allObjects
+        all_objects = []
+        async for post in collection.find({}):
+            all_objects.append(post)
+
+        return all_objects
     except:
         raise MongoError("Failed fetching multiple objects from MongoDB")
 

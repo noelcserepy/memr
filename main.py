@@ -47,10 +47,9 @@ async def allmemes(ctx):
     """ Returns a list of all memes saved in user's guild """
 
     guild_id = str(ctx.guild.id)
-
-    allMemes = mongo_storage.get_all_objects(guild_id)
-
-    if not allMemes:
+    all_memes = await mongo_storage.get_all_objects(guild_id)
+    
+    if not all_memes:
         await ctx.send(
             """
             There are no memes in your collection. 
@@ -59,9 +58,12 @@ async def allmemes(ctx):
         )
         return
 
+    all_meme_names = [post.get("name") for post in all_memes]
+    sorted_meme_names = sorted(all_meme_names, key=str.lower)
+
     message = "Here are the memes you've added so far: \n\n"
-    for post in allMemes:
-        message += f"${post.get('name')}\n"
+    for meme_name in sorted_meme_names:
+        message += f"${meme_name}\n"
 
     await ctx.send(message)
 
@@ -125,17 +127,6 @@ async def m(ctx, memeName):
 async def play(meme, vc):
     """ Downloads and plays a given meme from GCS. """
 
-    currentElementInQueue = meme_queue.get_current(meme.guild_id)
-
-    # fix this
-    with temp_ctx_manager.make_tempfile(f"{audiofile_path}{meme.guild_id}") as tempFileDir:
-        await GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
-        audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
-
-        if not vc.is_playing():
-            vc.play(audioSource, after=after_handler)
-
-
     def after_handler(error):
         """ Function for handling what happens after playing. """
 
@@ -150,6 +141,16 @@ async def play(meme, vc):
             print("After handler failed.")
             pass
 
+    currentElementInQueue = meme_queue.get_current(meme)
+
+    # fix this
+    with temp_ctx_manager.make_tempfile(f"{audiofile_path}{meme.guild_id}") as tempFileDir:
+        await GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
+        audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
+
+        if not vc.is_playing():
+            vc.play(audioSource, after=after_handler)
+
     
 async def play_next_in_queue(meme, vc):
     next_meme = meme_queue.next(meme)
@@ -160,7 +161,7 @@ async def play_next_in_queue(meme, vc):
         print("Done with queue")
         return
 
-    play(meme, vc)
+    await play(meme, vc)
 
 
 async def connect_vc(channel): 

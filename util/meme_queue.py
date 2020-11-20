@@ -43,8 +43,8 @@ def get_current(meme):
         queue = getQueue(meme.guild_id)
         if queue:
             return queue.currentInQueue()
-    except:
-        raise QueueError("Failed to get current element from queue.")
+    except Exception as e:
+        raise QueueError("Failed to get current element from queue.", e)
 
 
 def next(meme):

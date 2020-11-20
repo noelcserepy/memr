@@ -1,19 +1,15 @@
 import os
-# import google.auth
 import asyncio
 import aiohttp
 from gcloud.aio.storage import Storage
-# from google.cloud import storage
 from errors.errors import GCSError
+
+
 
 service_file_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 storage_client = Storage(service_file=service_file_path)
 bucket_name = "memr-audiofiles"
 bucket = storage_client.get_bucket(bucket_name)
-# credentials, project = google.auth.default()
-# bucket_name = "memr-audiofiles"
-# storage_client = storage.Client()
-# bucket = storage_client.bucket(bucket_name)
 
 
 async def upload_blob(audiofile_path, fileName):
@@ -34,8 +30,8 @@ async def download_blob(storage_object_name, destination_file_name):
     try:
         await storage_client.download_to_filename(bucket_name, storage_object_name, destination_file_name)
         print(f"Blob {storage_object_name} downloaded to {destination_file_name}.")
-    except:
-        raise GCSError("Failed to fetch data from GCS.")
+    except Exception as e:
+        raise GCSError("Failed to fetch data from GCS.", e)
 
 
 async def delete_blob(storage_object_name):
@@ -57,5 +53,5 @@ async def blob_exists(storage_object_name):
             return True
         else:
             return False
-    except:
-        raise GCSError("Failed to fetch data from GCS.")
+    except Exception as e:
+        raise GCSError("Failed to fetch data from GCS.", e)

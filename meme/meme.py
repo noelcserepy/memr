@@ -197,14 +197,13 @@ class Meme():
         try:
             values = [
                 self.ctx,
+                self.memeName,
+                self.guild_id,
+                self.mongoID,
                 self.memeName
             ]
-            self.check_inputs(values)
-                
-            if not await mongo_storage.get_one_object(self.guild_id, self.memeName):
-                await self.ctx.send("This meme is not in the database. Use \"$allmemes\" command to see all memes you have saved.")
 
-            await self.mongo_get()
+            self.check_inputs(values)
 
             try:
                 await GCS.delete_blob(self.fileName)
