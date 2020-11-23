@@ -6,7 +6,7 @@ import tempfile
 def make_tempfile(path):
     try:
         _, tempFileDir = tempfile.mkstemp(suffix=".ogg", dir=path)
-        f = open(tempFileDir, "r")
+        f = open(tempFileDir, "w+")
         yield tempFileDir
     finally:
         f.close()

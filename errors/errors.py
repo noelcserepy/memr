@@ -31,6 +31,11 @@ class VoiceClientError(MemrError):
 class QueueError(MemrError):
     """ Base error class for Queue related errors. """
 
+class EmptyError(QueueError):
+    """ Base error class for Empty Queue related errors. """
+
 class PlayError(MemrError):
     """ Base error class for Play related errors. """
     
+class VCError(MemrError):
+    """ Base error class for Voice Client related errors. """

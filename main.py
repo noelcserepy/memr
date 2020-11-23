@@ -11,7 +11,7 @@ import asyncio
 from util import meme_queue, temp_ctx_manager
 from storage import GCS, mongo_storage
 from meme.meme import Meme, create_meme
-from errors.errors import PlayError
+from errors.errors import PlayError, EmptyError, VCError
 
 
 
@@ -116,6 +116,11 @@ async def m(ctx, memeName):
             os.mkdir(f"{audiofile_path}{meme_to_play.guild_id}")
 
         await play(meme_to_play, vc)
+    except VCError:
+        try:
+            await ctx.send("Could not connect to voice client. Make sure you're in a voice channel.")
+        except Exception as e:
+            print("Error: ", e)
     except Exception as ex:
         try:
             print("Error: ", ex)
@@ -129,16 +134,17 @@ async def play(meme, vc):
 
     def after_handler(error):
         """ Function for handling what happens after playing. """
-
-        if error:
-            raise PlayError("After handler Failed.")
-
-        coro = play_next_in_queue(meme, vc)
-        fut = asyncio.run_coroutine_threadsafe(coro, client.loop)
         try:
+            if error:
+                raise PlayError(error)
+
+            coro = play_next_in_queue(meme, vc)
+            fut = asyncio.run_coroutine_threadsafe(coro, client.loop)
             fut.result()
-        except:
-            print("After handler failed.")
+        except EmptyError:
+            print("Queue is done.")
+        except Exception as e:
+            print("After handler failed.", e)
             pass
 
     currentElementInQueue = meme_queue.get_current(meme)
@@ -179,11 +185,7 @@ async def connect_vc(channel):
                 print(f"Already connected to Voice Client {vc}")
         return vc
     except:
-        try:
-            await ctx.send("Could not connect or find Voice Client. Make sure you're in a voice channel to begin with.")
-        except:
-            print("Voice client could not connect")
-            return
+        raise VCError("Voice client could not connect")
 
 
 client.run(discordToken)

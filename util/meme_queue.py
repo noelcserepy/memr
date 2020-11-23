@@ -1,5 +1,5 @@
 from collections import deque
-from errors.errors import QueueError
+from errors.errors import QueueError, EmptyError
 
 class MemeQueue:
     """Queue for housing Meme objects to be played next."""
@@ -42,7 +42,10 @@ def get_current(meme):
     try:
         queue = getQueue(meme.guild_id)
         if queue:
-            return queue.currentInQueue()
+            if queue.deck:
+                return queue.currentInQueue()
+            del queues[meme.guild_id]
+            return
     except Exception as e:
         raise QueueError("Failed to get current element from queue.", e)
 
@@ -51,7 +54,10 @@ def next(meme):
     try:
         queue = getQueue(meme.guild_id)
         if queue:
-            return queue.next()
+            if queue.deck:
+                return queue.next()
+            del queues[meme.guild_id]
+            return
     except:
         raise QueueError("Failed to remove element from queue.")
 
@@ -59,15 +65,8 @@ def next(meme):
 def getQueue(guild_id):
     try:
         queue = queues.get(guild_id)
-        
         if not queue:
             raise QueueError("No queue for this guild")
-
-        deck = queue.deck
-
-        if not deck:
-            del queues[guild_id]
-            raise QueueError("Queue is empty")
 
         return queue
     except QueueError as e:
