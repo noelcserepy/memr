@@ -39,3 +39,7 @@ class PlayError(MemrError):
     
 class VCError(MemrError):
     """ Base error class for Voice Client related errors. """
+
+class TempCleanerError(MemrError):
+    """ Base error class for Temp Cleaner related errors. """
+    

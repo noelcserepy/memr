@@ -39,8 +39,6 @@ class Meme():
     
 
     def check_inputs(self, values):
-        for v in values:
-            print(v)
         if not all(v is not None for v in values):
             raise MissingArguments("Called Meme method without the correct class variables.")
 

@@ -29,7 +29,7 @@ async def upload_blob(audiofile_path, fileName):
 async def download_blob(storage_object_name, destination_file_name):
     try:
         await storage_client.download_to_filename(bucket_name, storage_object_name, destination_file_name)
-        print(f"Blob {storage_object_name} downloaded to {destination_file_name}.")
+        print(f"Downloaded blob: {storage_object_name}")
     except Exception as e:
         raise GCSError("Failed to fetch data from GCS.", e)
 

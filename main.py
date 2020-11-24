@@ -8,7 +8,7 @@ import tempfile
 import shutil
 import asyncio
 
-from util import meme_queue, temp_ctx_manager
+from util import meme_queue,temp_cleaner
 from storage import GCS, mongo_storage
 from meme.meme import Meme, create_meme
 from errors.errors import PlayError, EmptyError, VCError
@@ -19,6 +19,8 @@ discordToken = os.getenv("DISCORD_BOT_TOKEN")
 client = commands.Bot(command_prefix='$')
 
 audiofile_path = "./temp/"
+
+temp_cleaner_instance = temp_cleaner.TempCleaner(client, audiofile_path)
 
 @client.event
 async def on_ready():
@@ -100,8 +102,7 @@ async def m(ctx, memeName):
     """
 
     try:
-        vc = await connect_vc(ctx.message.author.voice.channel)
-        
+        vc = await connect_vc(ctx)
         meme_to_play = await create_meme(ctx, memeName)
 
         in_db = await meme_to_play.is_in_db()
@@ -111,7 +112,6 @@ async def m(ctx, memeName):
 
         meme_queue.add_element(meme_to_play)
 
-        #put in temp_ctx_manager
         if not os.path.exists(f"{audiofile_path}{meme_to_play.guild_id}"):
             os.mkdir(f"{audiofile_path}{meme_to_play.guild_id}")
 
@@ -137,6 +137,8 @@ async def play(meme, vc):
         try:
             if error:
                 raise PlayError(error)
+            
+            temp_cleaner_instance.flag_to_remove(tempFileDir)
 
             coro = play_next_in_queue(meme, vc)
             fut = asyncio.run_coroutine_threadsafe(coro, client.loop)
@@ -148,31 +150,29 @@ async def play(meme, vc):
             pass
 
     currentElementInQueue = meme_queue.get_current(meme)
+    if not currentElementInQueue:
+        raise EmptyError()
 
-    # fix this
-    with temp_ctx_manager.make_tempfile(f"{audiofile_path}{meme.guild_id}") as tempFileDir:
-        await GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
-        audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
+    temp_path = f"{audiofile_path}{meme.guild_id}"
+    _, tempFileDir = tempfile.mkstemp(suffix=".ogg", dir=temp_path)
 
-        if not vc.is_playing():
-            vc.play(audioSource, after=after_handler)
+    await GCS.download_blob(currentElementInQueue.fileName, tempFileDir)
+
+    audioSource = discord.FFmpegPCMAudio(tempFileDir, options="-f s16le -acodec pcm_s16le")
+
+    if not vc.is_playing():
+        vc.play(audioSource, after=after_handler)
 
     
 async def play_next_in_queue(meme, vc):
-    next_meme = meme_queue.next(meme)
-    
-    if not next_meme:
-        print(f"DELETING: {audiofile_path}{meme.guild_id}")
-        shutil.rmtree(f"{audiofile_path}{meme.guild_id}")
-        print("Done with queue")
-        return
-
+    meme_queue.next(meme)
     await play(meme, vc)
 
 
-async def connect_vc(channel): 
+async def connect_vc(ctx): 
     """ Connects to Voice Client if not already connected and returns it. """
     try: 
+        channel = ctx.message.author.voice.channel
         vc_list = client.voice_clients
         
         if not vc_list:

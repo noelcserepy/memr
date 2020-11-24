@@ -25,7 +25,6 @@ async def get_one_object(guild_id, objName):
     try:
         collection = db[guild_id]
         obj = await collection.find_one({"name": objName})
-        print(obj)
         return obj
     except:
         raise MongoError("Failed fetching single object from MongoDB.")
